@@ -13,5 +13,6 @@
     <color name="gray_600">#FF757575</color>
     <color name="dhl_yellow">#FFCC00</color>
     <color name="dhl_red">#D40511</color>
+    <color name="dhl_red_dark">#840007</color>
 
 </resources>

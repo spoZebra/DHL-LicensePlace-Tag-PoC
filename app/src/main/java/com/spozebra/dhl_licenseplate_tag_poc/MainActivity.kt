@@ -20,8 +20,6 @@ class MainActivity : AppCompatActivity(), RfidEventsListener {
     private lateinit var instructionTextView: TextView
     private lateinit var circleView: CircleView
 
-    private var rfidInterface : RFIDReaderInterface? = null
-
     private var distance = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -34,14 +32,15 @@ class MainActivity : AppCompatActivity(), RfidEventsListener {
         instructionTextView = findViewById(R.id.instructionTextView)
         circleView = findViewById(R.id.circleView)
 
-        if(rfidInterface == null){
+        if(Companion.rfidInterface == null){
             progressBar.visibility = ProgressBar.VISIBLE
             Thread {
-                rfidInterface = RFIDReaderInterface(this)
-                var result = rfidInterface!!.connect()
+                Companion.rfidInterface = RFIDReaderInterface(this)
+                var result = Companion.rfidInterface!!.connect()
 
                 runOnUiThread {
                     circleView.visibility = View.VISIBLE
+                    tagDistanceTextView.visibility = TextView.VISIBLE
                     progressBar.visibility = ProgressBar.GONE
                     Toast.makeText(this.baseContext, if(result) "Reader connected!" else "Connection ERROR!", Toast.LENGTH_LONG)
                 }
@@ -51,7 +50,7 @@ class MainActivity : AppCompatActivity(), RfidEventsListener {
     // Read Event Notification
     override fun eventReadNotify(e: RfidReadEvents) {
         // Recommended to use new method getReadTagsEx for better performance in case of large tag population
-        val myTags: Array<TagData> = rfidInterface!!.reader.Actions.getReadTags(100)
+        val myTags: Array<TagData> = Companion.rfidInterface!!.reader.Actions.getReadTags(100)
         if (myTags != null) {
             for (tag in myTags) {
                 Log.d(TAG, "Tag ID " + tag.tagID)
@@ -84,7 +83,8 @@ class MainActivity : AppCompatActivity(), RfidEventsListener {
                 Thread {
                     try {
                         //rfidInterface!!.reader.Actions.Inventory.perform()
-                        rfidInterface!!.reader.Actions.TagLocationing.Perform("3039606343AFCE40002BD2FA", null, null)
+                        if(licensePlateTextView.text.length != 0)
+                            Companion.rfidInterface!!.reader.Actions.TagLocationing.Perform(licensePlateTextView.text.toString(), null, null)
                     } catch (e: InvalidUsageException) {
                         e.printStackTrace()
                     } catch (e: OperationFailureException) {
@@ -96,7 +96,7 @@ class MainActivity : AppCompatActivity(), RfidEventsListener {
 
                 Thread {
                     try {
-                        rfidInterface!!.reader.Actions.Inventory.stop()
+                        Companion.rfidInterface!!.reader.Actions.Inventory.stop()
                         this@MainActivity.runOnUiThread {
                             tagDistanceTextView.text = "0"
                             circleView.updateRadius(0)
@@ -112,8 +112,12 @@ class MainActivity : AppCompatActivity(), RfidEventsListener {
     }
     override fun onDestroy() {
         super.onDestroy()
-        if (rfidInterface != null) {
-            rfidInterface!!.onDestroy()
+        if (Companion.rfidInterface != null) {
+            Companion.rfidInterface!!.onDestroy()
         }
+    }
+
+    companion object {
+        private var rfidInterface : RFIDReaderInterface? = null
     }
 }
