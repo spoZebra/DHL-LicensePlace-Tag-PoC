@@ -1,0 +1,7 @@
+<resources>
+
+    <style name="Widget.Theme.DHLLicensePlateTagPOC.MyView" parent="">
+        <item name="android:background">@color/dhl_yellow</item>
+        <item name="exampleColor">@color/dhl_red</item>
+    </style>
+</resources>
