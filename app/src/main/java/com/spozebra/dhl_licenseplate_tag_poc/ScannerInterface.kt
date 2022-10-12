@@ -2,10 +2,12 @@ package com.spozebra.dhl_licenseplate_tag_poc
 
 import android.content.Context
 import com.zebra.scannercontrol.*
+import java.nio.ByteBuffer
+import java.nio.charset.Charset
 import java.util.*
 
 
-class ScannerInterface: IDcsSdkApiDelegate {
+class ScannerInterface(val listener : IBarcodeScannedListener): IDcsSdkApiDelegate {
     private var sdkHandler: SDKHandler? = null
 
     fun connect(context : Context) : Boolean {
@@ -13,8 +15,20 @@ class ScannerInterface: IDcsSdkApiDelegate {
             sdkHandler = SDKHandler(context)
         sdkHandler!!.dcssdkSetOperationalMode(DCSSDKDefs.DCSSDK_MODE.DCSSDK_OPMODE_BT_NORMAL)
 
-        val notifications_mask = DCSSDKDefs.DCSSDK_EVENT.DCSSDK_EVENT_BARCODE.value
+        sdkHandler!!.dcssdkSetDelegate(this);
+        var notifications_mask = 0
+        notifications_mask =
+            notifications_mask or (DCSSDKDefs.DCSSDK_EVENT.DCSSDK_EVENT_SCANNER_APPEARANCE.value or
+                    DCSSDKDefs.DCSSDK_EVENT.DCSSDK_EVENT_SCANNER_DISAPPEARANCE.value)
+        notifications_mask =
+            notifications_mask or (DCSSDKDefs.DCSSDK_EVENT.DCSSDK_EVENT_SESSION_ESTABLISHMENT.value or
+                    DCSSDKDefs.DCSSDK_EVENT.DCSSDK_EVENT_SESSION_TERMINATION.value)
+        notifications_mask =
+            notifications_mask or DCSSDKDefs.DCSSDK_EVENT.DCSSDK_EVENT_BARCODE.value
+// subscribe to events set in notification mask
+        // subscribe to events set in notification mask
         sdkHandler!!.dcssdkSubsribeForEvents(notifications_mask)
+        sdkHandler!!.dcssdkEnableAvailableScannersDetection(true)
 
         val scannerInfoList : ArrayList<DCSScannerInfo> = ArrayList()
         sdkHandler!!.dcssdkGetAvailableScannersList(scannerInfoList)
@@ -48,8 +62,8 @@ class ScannerInterface: IDcsSdkApiDelegate {
     }
 
     override fun dcssdkEventBarcode(p0: ByteArray?, p1: Int, p2: Int) {
-        val barcode = p0!!.toString()
-
+        val barcode = String(p0!!)
+        listener.barcodeScanned(barcode)
     }
 
     override fun dcssdkEventImage(p0: ByteArray?, p1: Int) {

@@ -3,20 +3,22 @@ package com.spozebra.dhl_licenseplate_tag_poc
 import android.os.Bundle
 import android.util.Log
 import android.view.View
+import android.widget.EditText
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.spozebra.dhl_licenseplate_tag_poc.view.CircleView
 import com.zebra.rfid.api3.*
+import java.math.BigInteger
 
 
-class MainActivity : AppCompatActivity(), RfidEventsListener {
+class MainActivity : AppCompatActivity(), RfidEventsListener, IBarcodeScannedListener {
 
     private val TAG: String = "RFIDReaderInterface"
 
     private lateinit var progressBar: ProgressBar
-    private lateinit var licensePlateTextView: TextView
+    private lateinit var editTextLicensePlate: EditText
     private lateinit var tagDistanceTextView: TextView
     private lateinit var instructionTextView: TextView
     private lateinit var circleView: CircleView
@@ -39,7 +41,7 @@ class MainActivity : AppCompatActivity(), RfidEventsListener {
         setContentView(R.layout.activity_main)
 
         progressBar = findViewById(R.id.progressBar)
-        licensePlateTextView = findViewById(R.id.licensePlateTextView)
+        editTextLicensePlate = findViewById(R.id.editTextLicensePlate)
         tagDistanceTextView = findViewById(R.id.tagDistanceTextView)
         instructionTextView = findViewById(R.id.instructionTextView)
         circleView = findViewById(R.id.circleView)
@@ -54,7 +56,7 @@ class MainActivity : AppCompatActivity(), RfidEventsListener {
             Thread {
 
                 if(Companion.scannerInterface == null)
-                    Companion.scannerInterface = ScannerInterface()
+                    Companion.scannerInterface = ScannerInterface(this)
 
                 if(Companion.rfidInterface == null)
                     Companion.rfidInterface = RFIDReaderInterface(this)
@@ -84,6 +86,12 @@ class MainActivity : AppCompatActivity(), RfidEventsListener {
         filter.addAction("$packageName.ACTION")
         filter.addAction("$packageName.service.ACTION")
         registerReceiver(dataWedgeReceiver, filter)*/
+    }
+
+    override fun barcodeScanned(barcode: String) {
+        runOnUiThread {
+            editTextLicensePlate.setText(barcode)
+        }
     }
 
 
@@ -119,8 +127,17 @@ class MainActivity : AppCompatActivity(), RfidEventsListener {
                 Thread {
                     try {
                         //rfidInterface!!.reader.Actions.Inventory.perform()
-                        if(licensePlateTextView.text.length != 0)
-                            Companion.rfidInterface!!.reader.Actions.TagLocationing.Perform(licensePlateTextView.text.toString(), null, null)
+                        if(editTextLicensePlate.text.length != 0){
+                            var content = editTextLicensePlate.text.toString()
+                            if(content.startsWith("JJD")) {
+                                val tagId = content.substring(3, content.length)
+                                val tagbigInt = BigInteger(tagId)
+                                val hex = tagbigInt.toString(16)
+                                content = hex.padEnd(32, '0').uppercase()
+                            }
+                            Companion.rfidInterface!!.reader.Actions.TagLocationing.Perform(content, null, null)
+
+                        }
                     } catch (e: Exception) {
                         e.printStackTrace()
                     }
