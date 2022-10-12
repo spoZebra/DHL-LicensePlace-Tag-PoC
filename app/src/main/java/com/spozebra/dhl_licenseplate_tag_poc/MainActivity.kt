@@ -10,6 +10,7 @@ import androidx.appcompat.app.AppCompatActivity
 import com.spozebra.dhl_licenseplate_tag_poc.view.CircleView
 import com.zebra.rfid.api3.*
 
+
 class MainActivity : AppCompatActivity(), RfidEventsListener {
 
     private val TAG: String = "RFIDReaderInterface"
@@ -22,6 +23,17 @@ class MainActivity : AppCompatActivity(), RfidEventsListener {
 
     private var distance = 0
 
+    /*val dataWedgeReceiver = object : BroadcastReceiver() {
+
+        override fun onReceive(context: Context?, intent: Intent) {
+            val action = intent.action
+            if (action == "com.spozebra.dhl_licenseplate_tag_poc.ACTION") {
+                val decodedData: String? = intent.getStringExtra("com.symbol.datawedge.data_string")
+                licensePlateTextView.text = decodedData
+            }
+        }
+    }*/
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -32,21 +44,49 @@ class MainActivity : AppCompatActivity(), RfidEventsListener {
         instructionTextView = findViewById(R.id.instructionTextView)
         circleView = findViewById(R.id.circleView)
 
+        //var dwConf = DataWedgeInterface(applicationContext);
+        //dwConf.configure(packageName)
+
+        // registerReceivers()
+
         if(Companion.rfidInterface == null){
             progressBar.visibility = ProgressBar.VISIBLE
             Thread {
-                Companion.rfidInterface = RFIDReaderInterface(this)
-                var result = Companion.rfidInterface!!.connect()
+
+                if(Companion.scannerInterface == null)
+                    Companion.scannerInterface = ScannerInterface()
+
+                if(Companion.rfidInterface == null)
+                    Companion.rfidInterface = RFIDReaderInterface(this)
+
+                var connectScannerResult = Companion.scannerInterface!!.connect(applicationContext)
+                var connectRFIDResult = Companion.rfidInterface!!.connect()
 
                 runOnUiThread {
                     circleView.visibility = View.VISIBLE
                     tagDistanceTextView.visibility = TextView.VISIBLE
                     progressBar.visibility = ProgressBar.GONE
-                    Toast.makeText(this.baseContext, if(result) "Reader connected!" else "Connection ERROR!", Toast.LENGTH_LONG)
+                    Toast.makeText(applicationContext, if(connectRFIDResult && connectScannerResult) "Reader & Scanner are connected!" else "Connection ERROR!", Toast.LENGTH_LONG)
                 }
             }.start()
         }
     }
+
+    // Create filter for the broadcast intent
+    private fun registerReceivers() {
+        // DW OFF
+        /*val filter = IntentFilter()
+        filter.addAction("com.symbol.datawedge.api.NOTIFICATION_ACTION") // for notification result
+        filter.addAction("com.symbol.datawedge.api.RESULT_ACTION") // for error code result
+        filter.addCategory(Intent.CATEGORY_DEFAULT) // needed to get version info
+
+        // register to received broadcasts via DataWedge scanning
+        filter.addAction("$packageName.ACTION")
+        filter.addAction("$packageName.service.ACTION")
+        registerReceiver(dataWedgeReceiver, filter)*/
+    }
+
+
     // Read Event Notification
     override fun eventReadNotify(e: RfidReadEvents) {
         // Recommended to use new method getReadTagsEx for better performance in case of large tag population
@@ -57,21 +97,17 @@ class MainActivity : AppCompatActivity(), RfidEventsListener {
                 if (tag.isContainsLocationInfo) {
                     val dist = tag.LocationInfo.relativeDistance.toInt()
                     Log.d(TAG, "Tag relative distance $dist")
-                    updateUI(dist)
+
+                    this@MainActivity.runOnUiThread {
+                        if(dist != distance) {
+                            tagDistanceTextView.text = dist.toString()
+                            distance = dist
+                            circleView.updateRadius(distance)
+                        }
+                    }
                 }
             }
         }
-    }
-
-    private fun updateUI(newDist : Int){
-        this@MainActivity.runOnUiThread {
-            if(newDist != distance) {
-                tagDistanceTextView.text = newDist.toString()
-                distance = newDist
-                circleView.updateRadius(distance)
-            }
-        }
-
     }
 
     // Status Event Notification
@@ -85,9 +121,7 @@ class MainActivity : AppCompatActivity(), RfidEventsListener {
                         //rfidInterface!!.reader.Actions.Inventory.perform()
                         if(licensePlateTextView.text.length != 0)
                             Companion.rfidInterface!!.reader.Actions.TagLocationing.Perform(licensePlateTextView.text.toString(), null, null)
-                    } catch (e: InvalidUsageException) {
-                        e.printStackTrace()
-                    } catch (e: OperationFailureException) {
+                    } catch (e: Exception) {
                         e.printStackTrace()
                     }
                 }.start()
@@ -101,15 +135,19 @@ class MainActivity : AppCompatActivity(), RfidEventsListener {
                             tagDistanceTextView.text = "0"
                             circleView.updateRadius(0)
                         }
-                    } catch (e: InvalidUsageException) {
-                        e.printStackTrace()
-                    } catch (e: OperationFailureException) {
+                    } catch (e: Exception) {
                         e.printStackTrace()
                     }
                 }.start()
             }
         }
     }
+
+    override fun onPause() {
+        super.onPause()
+       // unregisterReceiver(dataWedgeReceiver);
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         if (Companion.rfidInterface != null) {
@@ -119,5 +157,7 @@ class MainActivity : AppCompatActivity(), RfidEventsListener {
 
     companion object {
         private var rfidInterface : RFIDReaderInterface? = null
+        private var scannerInterface : ScannerInterface? = null
     }
+
 }
