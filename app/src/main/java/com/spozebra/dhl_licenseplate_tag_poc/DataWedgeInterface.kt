@@ -55,6 +55,12 @@ class DataWedgeInterface(val context: Context) {
         intentConfig.putBundle("PARAM_LIST", intentProps)
         profileConfig.putBundle("PLUGIN_CONFIG", intentConfig)
         sendDataWedgeIntentWithExtra(ACTION_DATAWEDGE, EXTRA_SET_CONFIG, profileConfig)
+
+        val appConfig = Bundle()
+        appConfig.putString("PACKAGE_NAME", packageName) //  Associate the profile with this app
+        appConfig.putStringArray("ACTIVITY_LIST", arrayOf("*"))
+        profileConfig.putParcelableArray("APP_LIST", arrayOf(appConfig))
+        sendDataWedgeIntentWithExtra(ACTION_DATAWEDGE, EXTRA_SET_CONFIG, profileConfig)
     }
 
     fun p2(){

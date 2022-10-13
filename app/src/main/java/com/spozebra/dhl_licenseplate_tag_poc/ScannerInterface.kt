@@ -17,15 +17,12 @@ class ScannerInterface(val listener : IBarcodeScannedListener): IDcsSdkApiDelega
 
         sdkHandler!!.dcssdkSetDelegate(this);
         var notifications_mask = 0
-        notifications_mask =
-            notifications_mask or (DCSSDKDefs.DCSSDK_EVENT.DCSSDK_EVENT_SCANNER_APPEARANCE.value or
-                    DCSSDKDefs.DCSSDK_EVENT.DCSSDK_EVENT_SCANNER_DISAPPEARANCE.value)
-        notifications_mask =
-            notifications_mask or (DCSSDKDefs.DCSSDK_EVENT.DCSSDK_EVENT_SESSION_ESTABLISHMENT.value or
-                    DCSSDKDefs.DCSSDK_EVENT.DCSSDK_EVENT_SESSION_TERMINATION.value)
-        notifications_mask =
-            notifications_mask or DCSSDKDefs.DCSSDK_EVENT.DCSSDK_EVENT_BARCODE.value
-// subscribe to events set in notification mask
+        notifications_mask = notifications_mask or (DCSSDKDefs.DCSSDK_EVENT.DCSSDK_EVENT_SCANNER_APPEARANCE.value or
+                DCSSDKDefs.DCSSDK_EVENT.DCSSDK_EVENT_SCANNER_DISAPPEARANCE.value)
+        notifications_mask = notifications_mask or (DCSSDKDefs.DCSSDK_EVENT.DCSSDK_EVENT_SESSION_ESTABLISHMENT.value or
+                DCSSDKDefs.DCSSDK_EVENT.DCSSDK_EVENT_SESSION_TERMINATION.value)
+        notifications_mask = notifications_mask or DCSSDKDefs.DCSSDK_EVENT.DCSSDK_EVENT_BARCODE.value
+
         // subscribe to events set in notification mask
         sdkHandler!!.dcssdkSubsribeForEvents(notifications_mask)
         sdkHandler!!.dcssdkEnableAvailableScannersDetection(true)

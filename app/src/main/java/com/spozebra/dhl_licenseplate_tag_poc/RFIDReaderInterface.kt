@@ -71,7 +71,7 @@ class RFIDReaderInterface(var listener: RfidEventsListener) {
     fun onDestroy() {
         try {
             if (reader != null) {
-                reader.Events.removeEventsListener(listener)
+                reader.Events?.removeEventsListener(listener)
                 reader.disconnect()
                 reader.Dispose()
                 readers.Dispose()

@@ -1,5 +1,9 @@
 package com.spozebra.dhl_licenseplate_tag_poc
 
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.os.Bundle
 import android.util.Log
 import android.view.View
@@ -25,16 +29,16 @@ class MainActivity : AppCompatActivity(), RfidEventsListener, IBarcodeScannedLis
 
     private var distance = 0
 
-    /*val dataWedgeReceiver = object : BroadcastReceiver() {
+    private val dataWedgeReceiver = object : BroadcastReceiver() {
 
         override fun onReceive(context: Context?, intent: Intent) {
             val action = intent.action
             if (action == "com.spozebra.dhl_licenseplate_tag_poc.ACTION") {
                 val decodedData: String? = intent.getStringExtra("com.symbol.datawedge.data_string")
-                licensePlateTextView.text = decodedData
+                editTextLicensePlate.setText(decodedData)
             }
         }
-    }*/
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -46,22 +50,27 @@ class MainActivity : AppCompatActivity(), RfidEventsListener, IBarcodeScannedLis
         instructionTextView = findViewById(R.id.instructionTextView)
         circleView = findViewById(R.id.circleView)
 
-        //var dwConf = DataWedgeInterface(applicationContext);
-        //dwConf.configure(packageName)
 
-        // registerReceivers()
+        registerReceivers()
 
         if(Companion.rfidInterface == null){
             progressBar.visibility = ProgressBar.VISIBLE
             Thread {
 
+                // Configure datawedge
+                var dwConf = DataWedgeInterface(applicationContext);
+                dwConf.configure(packageName)
+
+                // Configure BT Scanner
                 if(Companion.scannerInterface == null)
                     Companion.scannerInterface = ScannerInterface(this)
 
+                var connectScannerResult = Companion.scannerInterface!!.connect(applicationContext)
+
+                // Configure RFID
                 if(Companion.rfidInterface == null)
                     Companion.rfidInterface = RFIDReaderInterface(this)
 
-                var connectScannerResult = Companion.scannerInterface!!.connect(applicationContext)
                 var connectRFIDResult = Companion.rfidInterface!!.connect()
 
                 runOnUiThread {
@@ -76,8 +85,7 @@ class MainActivity : AppCompatActivity(), RfidEventsListener, IBarcodeScannedLis
 
     // Create filter for the broadcast intent
     private fun registerReceivers() {
-        // DW OFF
-        /*val filter = IntentFilter()
+        val filter = IntentFilter()
         filter.addAction("com.symbol.datawedge.api.NOTIFICATION_ACTION") // for notification result
         filter.addAction("com.symbol.datawedge.api.RESULT_ACTION") // for error code result
         filter.addCategory(Intent.CATEGORY_DEFAULT) // needed to get version info
@@ -85,7 +93,7 @@ class MainActivity : AppCompatActivity(), RfidEventsListener, IBarcodeScannedLis
         // register to received broadcasts via DataWedge scanning
         filter.addAction("$packageName.ACTION")
         filter.addAction("$packageName.service.ACTION")
-        registerReceiver(dataWedgeReceiver, filter)*/
+        registerReceiver(dataWedgeReceiver, filter)
     }
 
     override fun barcodeScanned(barcode: String) {
@@ -136,7 +144,9 @@ class MainActivity : AppCompatActivity(), RfidEventsListener, IBarcodeScannedLis
                                 content = hex.padEnd(32, '0').uppercase()
                             }
                             Companion.rfidInterface!!.reader.Actions.TagLocationing.Perform(content, null, null)
-
+                        }
+                        else{
+                            Toast.makeText(applicationContext, "Choose a License Plate before to start searching", Toast.LENGTH_LONG)
                         }
                     } catch (e: Exception) {
                         e.printStackTrace()
@@ -162,7 +172,7 @@ class MainActivity : AppCompatActivity(), RfidEventsListener, IBarcodeScannedLis
 
     override fun onPause() {
         super.onPause()
-       // unregisterReceiver(dataWedgeReceiver);
+        unregisterReceiver(dataWedgeReceiver);
     }
 
     override fun onDestroy() {
