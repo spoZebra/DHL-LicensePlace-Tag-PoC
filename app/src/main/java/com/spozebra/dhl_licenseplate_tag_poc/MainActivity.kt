@@ -35,7 +35,7 @@ class MainActivity : AppCompatActivity(), RfidEventsListener, IBarcodeScannedLis
             val action = intent.action
             if (action == "com.spozebra.dhl_licenseplate_tag_poc.ACTION") {
                 val decodedData: String? = intent.getStringExtra("com.symbol.datawedge.data_string")
-                editTextLicensePlate.setText(decodedData)
+                this@MainActivity.barcodeScanned(decodedData)
             }
         }
     }
@@ -49,38 +49,39 @@ class MainActivity : AppCompatActivity(), RfidEventsListener, IBarcodeScannedLis
         tagDistanceTextView = findViewById(R.id.tagDistanceTextView)
         instructionTextView = findViewById(R.id.instructionTextView)
         circleView = findViewById(R.id.circleView)
-
-
+        // Register DW receiver
         registerReceivers()
+        // Setup RFID & Scanner
+        configureReader()
+    }
 
-        if(Companion.rfidInterface == null){
-            progressBar.visibility = ProgressBar.VISIBLE
-            Thread {
+    private fun configureReader(){
+        progressBar.visibility = ProgressBar.VISIBLE
+        Thread {
 
-                // Configure datawedge
-                var dwConf = DataWedgeInterface(applicationContext);
-                dwConf.configure(packageName)
+            // Configure datawedge
+            var dwConf = DataWedgeInterface(applicationContext);
+            dwConf.configure(packageName)
 
-                // Configure BT Scanner
-                if(Companion.scannerInterface == null)
-                    Companion.scannerInterface = ScannerInterface(this)
+            // Configure BT Scanner
+            /*if(Companion.scannerInterface == null)
+                Companion.scannerInterface = ScannerInterface(this)
 
-                var connectScannerResult = Companion.scannerInterface!!.connect(applicationContext)
+            var connectScannerResult = Companion.scannerInterface!!.connect(applicationContext)*/
 
-                // Configure RFID
-                if(Companion.rfidInterface == null)
-                    Companion.rfidInterface = RFIDReaderInterface(this)
+            // Configure RFID
+            if(Companion.rfidInterface == null)
+                Companion.rfidInterface = RFIDReaderInterface(this)
 
-                var connectRFIDResult = Companion.rfidInterface!!.connect()
+            var connectRFIDResult = Companion.rfidInterface!!.connect(applicationContext)
 
-                runOnUiThread {
-                    circleView.visibility = View.VISIBLE
-                    tagDistanceTextView.visibility = TextView.VISIBLE
-                    progressBar.visibility = ProgressBar.GONE
-                    Toast.makeText(applicationContext, if(connectRFIDResult && connectScannerResult) "Reader & Scanner are connected!" else "Connection ERROR!", Toast.LENGTH_LONG)
-                }
-            }.start()
-        }
+            runOnUiThread {
+                circleView.visibility = View.VISIBLE
+                tagDistanceTextView.visibility = TextView.VISIBLE
+                progressBar.visibility = ProgressBar.GONE
+                Toast.makeText(applicationContext, if(connectRFIDResult) "Reader & Scanner are connected!" else "Connection ERROR!", Toast.LENGTH_LONG).show()
+            }
+        }.start()
     }
 
     // Create filter for the broadcast intent
@@ -96,12 +97,11 @@ class MainActivity : AppCompatActivity(), RfidEventsListener, IBarcodeScannedLis
         registerReceiver(dataWedgeReceiver, filter)
     }
 
-    override fun barcodeScanned(barcode: String) {
+    override fun barcodeScanned(barcode: String?) {
         runOnUiThread {
             editTextLicensePlate.setText(barcode)
         }
     }
-
 
     // Read Event Notification
     override fun eventReadNotify(e: RfidReadEvents) {
@@ -134,19 +134,12 @@ class MainActivity : AppCompatActivity(), RfidEventsListener, IBarcodeScannedLis
 
                 Thread {
                     try {
-                        //rfidInterface!!.reader.Actions.Inventory.perform()
-                        if(editTextLicensePlate.text.length != 0){
-                            var content = editTextLicensePlate.text.toString()
-                            if(content.startsWith("JJD")) {
-                                val tagId = content.substring(3, content.length)
-                                val tagbigInt = BigInteger(tagId)
-                                val hex = tagbigInt.toString(16)
-                                content = hex.padEnd(32, '0').uppercase()
-                            }
-                            Companion.rfidInterface!!.reader.Actions.TagLocationing.Perform(content, null, null)
+                        if(editTextLicensePlate.text.isNotEmpty()){
+                            val tagIdToSearch = getTagContentFromLicensePlate(editTextLicensePlate.text.toString())
+                            Companion.rfidInterface!!.reader.Actions.TagLocationing.Perform(tagIdToSearch, null, null)
                         }
                         else{
-                            Toast.makeText(applicationContext, "Choose a License Plate before to start searching", Toast.LENGTH_LONG)
+                            Toast.makeText(applicationContext, "Choose a License Plate before to start searching", Toast.LENGTH_LONG).show()
                         }
                     } catch (e: Exception) {
                         e.printStackTrace()
@@ -168,6 +161,18 @@ class MainActivity : AppCompatActivity(), RfidEventsListener, IBarcodeScannedLis
                 }.start()
             }
         }
+    }
+
+    private fun getTagContentFromLicensePlate(licensePlate : String) : String{
+        var tagContent = licensePlate
+
+        if(licensePlate.startsWith("JJD")) {
+            val tagSubstring = licensePlate.substring(3, licensePlate.length)
+            val tagHexContent = BigInteger(tagSubstring).toString(16)
+            tagContent = tagHexContent.padEnd(32, '0').uppercase()
+        }
+
+        return tagContent
     }
 
     override fun onPause() {

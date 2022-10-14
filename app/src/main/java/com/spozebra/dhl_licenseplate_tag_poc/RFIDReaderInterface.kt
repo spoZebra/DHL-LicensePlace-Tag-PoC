@@ -1,5 +1,6 @@
 package com.spozebra.dhl_licenseplate_tag_poc
 
+import android.content.Context
 import com.zebra.rfid.api3.*
 import java.util.*
 
@@ -11,9 +12,9 @@ class RFIDReaderInterface(var listener: RfidEventsListener) {
     private var readerDevice: ReaderDevice? = null
     lateinit var reader: RFIDReader
 
-    fun connect(): Boolean {
+    fun connect(context : Context): Boolean {
         // Init
-        readers = Readers()
+        readers = Readers(context, ENUM_TRANSPORT.ALL)
 
         try {
             if (readers != null) {
