@@ -12,6 +12,7 @@ import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.spozebra.dhl_licenseplate_tag_poc.view.CircleView
 import com.zebra.rfid.api3.*
 import java.math.BigInteger
@@ -19,7 +20,7 @@ import java.math.BigInteger
 
 class MainActivity : AppCompatActivity(), RfidEventsListener, IBarcodeScannedListener {
 
-    private val TAG: String = "RFIDReaderInterface"
+    private val TAG: String = "MainActivity"
 
     private lateinit var progressBar: ProgressBar
     private lateinit var editTextLicensePlate: EditText
@@ -53,6 +54,21 @@ class MainActivity : AppCompatActivity(), RfidEventsListener, IBarcodeScannedLis
         registerReceivers()
         // Setup RFID & Scanner
         configureReader()
+
+        BottomNavigationView.OnNavigationItemSelectedListener { item ->
+            when(item.itemId) {
+                R.id.page_1 -> {
+                    // Respond to navigation item 1 click
+                    true
+                }
+                R.id.page_2 -> {
+                    InventoryFragment()
+                    // Respond to navigation item 2 click
+                    true
+                }
+                else -> false
+            }
+        }
     }
 
     private fun configureReader(){
@@ -188,7 +204,7 @@ class MainActivity : AppCompatActivity(), RfidEventsListener, IBarcodeScannedLis
     }
 
     companion object {
-        private var rfidInterface : RFIDReaderInterface? = null
+        var rfidInterface : RFIDReaderInterface? = null
         private var scannerInterface : ScannerInterface? = null
     }
 

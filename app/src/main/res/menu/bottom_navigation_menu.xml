@@ -1,0 +1,12 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/page_1"
+        android:enabled="true"
+        android:icon="@drawable/search_icon"
+        android:title="Locate"/>
+    <item
+        android:id="@+id/page_2"
+        android:enabled="true"
+        android:icon="@drawable/inventory_icon"
+        android:title="Inventory"/>
+</menu>
