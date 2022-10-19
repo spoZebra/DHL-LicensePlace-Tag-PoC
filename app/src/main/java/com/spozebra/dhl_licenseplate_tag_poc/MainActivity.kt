@@ -99,7 +99,12 @@ class MainActivity : AppCompatActivity(), RfidEventsListener, IBarcodeScannedLis
 
     override fun barcodeScanned(barcode: String?) {
         runOnUiThread {
-            editTextLicensePlate.setText(barcode)
+            if(barcode!!.startsWith("J")) {
+                editTextLicensePlate.setText(barcode)
+            }
+            else{
+                Toast.makeText(applicationContext, "WRONG CODE", Toast.LENGTH_LONG).show()
+            }
         }
     }
 
@@ -136,6 +141,13 @@ class MainActivity : AppCompatActivity(), RfidEventsListener, IBarcodeScannedLis
                     try {
                         if(editTextLicensePlate.text.isNotEmpty()){
                             val tagIdToSearch = getTagContentFromLicensePlate(editTextLicensePlate.text.toString())
+                            this@MainActivity.runOnUiThread {
+                                Toast.makeText(
+                                    applicationContext,
+                                    "Searching...",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            }
                             Companion.rfidInterface!!.reader.Actions.TagLocationing.Perform(tagIdToSearch, null, null)
                         }
                         else{
@@ -166,8 +178,9 @@ class MainActivity : AppCompatActivity(), RfidEventsListener, IBarcodeScannedLis
     private fun getTagContentFromLicensePlate(licensePlate : String) : String{
         var tagContent = licensePlate
 
-        if(licensePlate.startsWith("JJD")) {
-            val tagSubstring = licensePlate.substring(3, licensePlate.length)
+        if(licensePlate.startsWith("J")) {
+            val tagSubstring: String = licensePlate.filter(Char::isDigit)
+            //val tagSubstring = licensePlate.substring(3, licensePlate.length)
             val tagHexContent = BigInteger(tagSubstring).toString(16)
             tagContent = tagHexContent.padEnd(32, '0').uppercase()
         }
